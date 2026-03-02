@@ -1,4 +1,4 @@
-//! CLIP — Config Language Interchange Program
+//! CLCI — Command Line Config Interchanger
 //! Copyright (c) 2026 Henry Knight
 //! Licensed under CC BY-NC 4.0: https://creativecommons.org/licenses/by-nc/4.0/
 
