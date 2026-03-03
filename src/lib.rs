@@ -16,6 +16,7 @@ pub fn open_file(filepath: &str) -> Result<impl Convert, Box<dyn Error>> {
         .extension()
         .and_then(OsStr::to_str)
         .unwrap_or("");
+    
     let mut file_handle = File::open(filepath)?;
 
     let mut file_content = String::new();
@@ -23,7 +24,7 @@ pub fn open_file(filepath: &str) -> Result<impl Convert, Box<dyn Error>> {
     file_handle.read_to_string(&mut file_content)?;
 
     match extension {
-        ".ini" => {
+        "ini" => {
             Ok(Ini::new(file_content))
         },
         _ => Err(ClciError::InvalidFileTypeError(extension.to_string()))?

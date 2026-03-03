@@ -17,4 +17,9 @@ fn main() {
         eprintln!("Program encountered an error: {e}");
         process::exit(1);
     });
+
+    let ir = source.parse().unwrap_or_else(|e| {
+        eprintln!("Program encountered an error: {e}");
+        process::exit(1);
+    });
 }
