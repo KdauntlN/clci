@@ -8,3 +8,4 @@ opt-level = 3
 
 [dependencies]
 clap = { version = "4.5.60", features = ["derive"] }
+indexmap = "2.13.0"

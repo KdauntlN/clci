@@ -3,7 +3,8 @@
 //! Licensed under CC BY-NC 4.0: https://creativecommons.org/licenses/by-nc/4.0/
 
 use clci::{
-    cli::Args, parsing::{Convert, Ini},
+    cli::Args,
+    parsing::{Interchange},
 };
 
 use std::process;
@@ -13,12 +14,12 @@ use clap::Parser;
 fn main() {
     let args = Args::parse();
 
-    let source = clci::open_file(&args.source).unwrap_or_else(|e| {
+    let source = clci::open_file(args.source).unwrap_or_else(|e| {
         eprintln!("Program encountered an error: {e}");
         process::exit(1);
     });
 
-    let ir = source.parse().unwrap_or_else(|e| {
+    let _ir = source.parse().unwrap_or_else(|e| {
         eprintln!("Program encountered an error: {e}");
         process::exit(1);
     });

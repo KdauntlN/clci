@@ -2,29 +2,29 @@ pub mod parsing;
 pub mod cli;
 pub mod clcierror;
 
-use parsing::Convert;
-use parsing::Ini;
+use parsing::{
+    Interchange,
+    Ini
+};
+
 use clcierror::ClciError;
-use std::error::Error;
-use std::ffi::OsStr;
-use std::path::Path;
-use std::fs::File;
-use std::io::Read;
 
-pub fn open_file(filepath: &str) -> Result<impl Convert, Box<dyn Error>> {
-    let extension = Path::new(filepath)
-        .extension()
-        .and_then(OsStr::to_str)
-        .unwrap_or("");
-    
-    let mut file_handle = File::open(filepath)?;
+use std::{
+    error::Error,
+    fs,
+};
 
-    let mut file_content = String::new();
+pub fn open_file(filepath: String) -> Result<impl Interchange, Box<dyn Error>> {
+    let split_filepath: Vec<&str> = filepath.split(".").collect();
 
-    file_handle.read_to_string(&mut file_content)?;
+    let (extension, _rest) = split_filepath
+        .split_last()
+        .ok_or_else(|| ClciError::InvalidFileTypeError("".to_string()))?;
+
+    let file_content = fs::read_to_string(&filepath)?;
 
     match extension {
-        "ini" => {
+        &"ini" => {
             Ok(Ini::new(file_content))
         },
         _ => Err(ClciError::InvalidFileTypeError(extension.to_string()))?

@@ -1,24 +1,25 @@
 use std::{
     io,
-    collections::HashMap,
 };
 
-pub trait Convert: Sized {
+use indexmap::IndexMap;
+
+pub trait Interchange {
     type Output;
 
-    fn parse(self) -> io::Result<Structure>;
+    fn parse(&self) -> io::Result<Structure>;
     // fn reconstruct(ir: Structure) -> io::Result<Self::Output>;
 }
 
 #[derive(Debug, Clone)]
 pub struct Structure {
-    content: HashMap<String, Value>
+    content: IndexMap<String, Value>
 }
 
 impl Structure {
     fn new() -> Self {
         Self {
-            content: HashMap::new(),
+            content: IndexMap::new(),
         }
     }
 
@@ -50,16 +51,17 @@ impl Ini {
     }
 }
 
-impl Convert for Ini {
+impl Interchange for Ini {
     type Output = Self;
 
-    fn parse(self) -> io::Result<Structure> {
+    fn parse(&self) -> io::Result<Structure> {
         let lines = self.content.lines();
         let mut structure = Structure::new();
         let mut current_obj: Option<Structure> = None;
         let mut current_obj_name = String::new();
 
-        for (i, line) in lines.enumerate() {
+        for (_i, line) in lines.enumerate() {
+            if line.is_empty() { continue; }
             if line.starts_with("[") {
                 if let Some(section) = &mut current_obj {
                     structure.add_item(current_obj_name.clone(), Value::Object(section.clone()));
@@ -74,7 +76,15 @@ impl Convert for Ini {
                     .unwrap();
             } else {
                 let parts: Vec<&str> = line.split('=').collect();
+                let name = parts.get(0).unwrap().trim().to_string();
+                let value = parts.get(1).unwrap().trim().to_string();
 
+
+                if let Some(section) = &mut current_obj {
+                    section.add_item(name, Value::String(value));
+                } else {
+                    structure.add_item(name, Value::String(value));
+                }
             }
         }
 
@@ -84,5 +94,12 @@ impl Convert for Ini {
 
         dbg!(&structure);
         Ok(structure)
+    }
+}
+
+impl<T> Interchange for Vec<T> {
+    type Output = i32;
+    fn parse(&self) -> io::Result<Structure> {
+        Ok(Structure::new())
     }
 }
