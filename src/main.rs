@@ -4,7 +4,7 @@
 
 use clci::{
     cli::Args,
-    parsing::{Interchange},
+    Interchange,
 };
 
 use std::process;

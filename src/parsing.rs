@@ -1,43 +1,13 @@
-use std::{
-    io,
+use crate::{
+    clcierror::ClciError,
+    Interchange,
+    Structure,
+    Value
 };
 
-use indexmap::IndexMap;
-
-pub trait Interchange {
-    type Output;
-
-    fn parse(&self) -> io::Result<Structure>;
-    // fn reconstruct(ir: Structure) -> io::Result<Self::Output>;
-}
-
-#[derive(Debug, Clone)]
-pub struct Structure {
-    content: IndexMap<String, Value>
-}
-
-impl Structure {
-    fn new() -> Self {
-        Self {
-            content: IndexMap::new(),
-        }
-    }
-
-    fn add_item(&mut self, name: String, value: Value) {
-        self.content.insert(name, value);
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Value {
-    Comment(String),
-    Integer(i64),
-    Float(f64),
-    String(String),
-    Bool(bool),
-    Array(Vec<Value>),
-    Object(Structure),
-}
+use std::{
+    error::Error,
+};
 
 pub struct Ini {
     pub content: String,
@@ -54,37 +24,38 @@ impl Ini {
 impl Interchange for Ini {
     type Output = Self;
 
-    fn parse(&self) -> io::Result<Structure> {
+    fn parse(&self) -> Result<Structure, Box<dyn Error>> {
         let lines = self.content.lines();
         let mut structure = Structure::new();
         let mut current_obj: Option<Structure> = None;
         let mut current_obj_name = String::new();
 
-        for (_i, line) in lines.enumerate() {
-            if line.is_empty() { continue; }
+        for (i, line) in lines.enumerate() {
+            if line.is_empty() | line.starts_with(";") { continue; }
+
             if line.starts_with("[") {
-                if let Some(section) = &mut current_obj {
-                    structure.add_item(current_obj_name.clone(), Value::Object(section.clone()));
-                    current_obj = None;
+                if let Some(section) = current_obj.take() {
+                    structure.add_item(current_obj_name.clone(), Value::Object(section));
                 }
 
                 current_obj = Some(Structure::new());
                 current_obj_name = line.strip_prefix("[")
-                    .unwrap()
-                    .strip_suffix("]")
-                    .map(|line| line.to_string())
-                    .unwrap();
+                    .and_then(|l| l.strip_suffix("]"))
+                    .ok_or_else(|| ClciError::MalformedSectionHeader(i, line.to_string()))?
+                    .to_string();
             } else {
-                let parts: Vec<&str> = line.split('=').collect();
-                let name = parts.get(0).unwrap().trim().to_string();
-                let value = parts.get(1).unwrap().trim().to_string();
+                if let Some((key, value)) = line.split_once("=") {
+                    let key = key.trim().to_string();
+                    let value = value.trim().to_string();
 
-
-                if let Some(section) = &mut current_obj {
-                    section.add_item(name, Value::String(value));
+                    if let Some(section) = &mut current_obj {
+                        section.add_item(key, Value::String(value));
+                    } else {
+                        structure.add_item(key, Value::String(value));
+                    }
                 } else {
-                    structure.add_item(name, Value::String(value));
-                }
+                    Err(ClciError::MissingAssignmentOperator(i, line.to_string()))?;
+                }                
             }
         }
 
@@ -99,7 +70,7 @@ impl Interchange for Ini {
 
 impl<T> Interchange for Vec<T> {
     type Output = i32;
-    fn parse(&self) -> io::Result<Structure> {
+    fn parse(&self) -> Result<Structure, Box<dyn Error>> {
         Ok(Structure::new())
     }
 }
